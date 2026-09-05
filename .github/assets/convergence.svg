@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 580" width="880" height="580" role="img" aria-label="Two replicas edit the same shape while offline — one moves it, the other recolours it. On reconnect both edits survive.">
+  <defs>
+    <linearGradient id="ground" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1E2A38"/>
+      <stop offset="0.7" stop-color="#16202B"/>
+    </linearGradient>
+
+    <marker id="arrow" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0 0 L8 4 L0 8 z" fill="#E9E9E3" opacity="0.5"/>
+    </marker>
+
+    <style>
+      .label  { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 14px; letter-spacing: .4px; fill: #E9E9E3; opacity: .62; }
+      .stage  { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 13px; letter-spacing: 1.6px; fill: #E9E9E3; opacity: .42; }
+      .note   { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; fill: #E9E9E3; opacity: .55; }
+      .result { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 13.5px; fill: #C99A3F; }
+      .board  { fill: #FBFAF7; }
+      .edge   { fill: none; stroke: #E9E9E3; stroke-opacity: .32; }
+      .ghost  { fill: none; stroke: #16202B; stroke-opacity: .3; stroke-width: 1.5; stroke-dasharray: 4 4; }
+      .quiet  { fill: none; stroke: #16202B; stroke-opacity: .22; stroke-width: 1.5; }
+    </style>
+  </defs>
+
+  <rect width="880" height="580" rx="10" fill="url(#ground)"/>
+
+  <text class="label" x="215" y="52" text-anchor="middle">Replica A</text>
+  <text class="label" x="665" y="52" text-anchor="middle">Replica B</text>
+
+  <!-- Shared starting state -->
+  <g>
+    <rect class="board" x="85" y="70" width="260" height="96" rx="6"/>
+    <rect x="109" y="103" width="44" height="30" rx="3" fill="#2F6BA8"/>
+    <circle class="quiet" cx="313" cy="118" r="15"/>
+  </g>
+  <g>
+    <rect class="board" x="535" y="70" width="260" height="96" rx="6"/>
+    <rect x="559" y="103" width="44" height="30" rx="3" fill="#2F6BA8"/>
+    <circle class="quiet" cx="763" cy="118" r="15"/>
+  </g>
+
+  <path class="edge" d="M215 166 L215 234" stroke-dasharray="5 5"/>
+  <path class="edge" d="M665 166 L665 234" stroke-dasharray="5 5"/>
+
+  <text class="stage" x="440" y="206" text-anchor="middle">offline</text>
+
+  <!-- Diverged: A moves the shape, B recolours it -->
+  <g>
+    <rect class="board" x="85" y="234" width="260" height="96" rx="6"/>
+    <rect class="ghost" x="109" y="267" width="44" height="30" rx="3"/>
+    <rect x="215" y="267" width="44" height="30" rx="3" fill="#2F6BA8"/>
+    <circle class="quiet" cx="313" cy="282" r="15"/>
+  </g>
+  <text class="note" x="85" y="352">x: 28 → 130</text>
+
+  <g>
+    <rect class="board" x="535" y="234" width="260" height="96" rx="6"/>
+    <rect x="559" y="267" width="44" height="30" rx="3" fill="#C99A3F"/>
+    <circle class="quiet" cx="763" cy="282" r="15"/>
+  </g>
+  <text class="note" x="535" y="352">fill: lapis → brass</text>
+
+  <path class="edge" d="M215 372 C215 416 440 396 440 438" marker-end="url(#arrow)"/>
+  <path class="edge" d="M665 372 C665 416 440 396 440 438" marker-end="url(#arrow)"/>
+
+  <text class="stage" x="440" y="398" text-anchor="middle">reconnect</text>
+
+  <!-- Converged: both edits present -->
+  <g>
+    <rect class="board" x="310" y="446" width="260" height="96" rx="6"/>
+    <rect class="ghost" x="334" y="479" width="44" height="30" rx="3"/>
+    <rect x="440" y="479" width="44" height="30" rx="3" fill="#C99A3F"/>
+    <circle class="quiet" cx="538" cy="494" r="15"/>
+  </g>
+
+  <text class="result" x="310" y="566">Moved and recoloured. Neither edit was lost.</text>
+</svg>
