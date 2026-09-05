@@ -11,8 +11,8 @@ The merge engine is written from scratch rather than imported. That is the point
 
 ## The problem
 
-A whiteboard is a shared mutable document edited concurrently with no lock. Three requirements
-pull against each other:
+A whiteboard is a shared mutable document edited concurrently with no lock. Three requirements pull
+against each other:
 
 **Convergence.** Two replicas that have seen the same edits must show the same document, whatever
 order those edits arrived in.
@@ -27,26 +27,40 @@ The second forces every edit to apply locally before the server has seen it. Com
 first, that forces a merge strategy — because two people will always change the same thing before
 either learns about the other. The third rules out the server being the only source of truth.
 
-<img src=".github/assets/convergence.svg" alt="Two replicas edit one shape while offline. One moves it, the other recolours it. On reconnect both edits survive." width="100%">
+<p align="center">
+  <img src=".github/assets/convergence.svg" width="580"
+       alt="While offline, replica A moves a shape and replica B recolours the same shape. After reconnecting, both edits survive.">
+</p>
 
-That case — one user dragging a shape while another recolours it — is the one naive designs get
-wrong. Storing a shape as a single value with a single timestamp makes the later write discard the
-earlier one wholesale, which users experience as "my changes disappeared".
+<p align="center"><sub>One user drags a shape while another recolours it. Both edits have to survive.</sub></p>
+
+That case is the one naive designs get wrong. Storing a shape as a single value with a single
+timestamp makes the later write discard the earlier one wholesale, which users experience as "my
+changes disappeared". In Tessera every scalar property is its own mergeable register, so edits to
+different properties never contend.
 
 ## How it works
 
-Every scalar property is its own mergeable register, so edits to different properties of one shape
-never contend. Three problems fall out of that, and each has a specific answer:
+**Hybrid logical clocks.** Machine clocks disagree by seconds to minutes, so ordering edits by wall
+time lets one fast clock win every conflict forever — and a slow one never win at all. Both failures
+are silent. Tessera timestamps every operation with a physical component, which keeps "most recent"
+meaning roughly what a human expects, and a logical counter that carries ordering when physical time
+cannot. Peers implausibly far ahead are rejected, so one wrong clock cannot poison the rest.
 
-| Problem | Approach |
-| :-- | :-- |
-| Machine clocks disagree by seconds to minutes, so wall-clock ordering lets a fast clock win every conflict forever | **Hybrid logical clocks** — a physical component that keeps "latest" meaning roughly what a human expects, and a logical counter that carries ordering when physical time cannot. Peers implausibly far ahead are rejected, so one wrong clock cannot poison the rest |
-| Integer z-indices renumber every shape above an insertion, so concurrent reorders produce rewrites no merge rule can reconcile | **Fractional indexing** — variable-length base-62 keys with room between any two, so a reorder rewrites exactly one key. An integer part keeps appends at constant length, which matters because every new shape appends |
-| Concurrent mutation of one document is where convergence bugs hide, and they are unreproducible by nature | **One actor per board** — every message funnels through a single channel consumer that owns the replica. No locks, deterministic order per document, and concurrency that lives between boards rather than inside one |
+**Fractional indexing.** Integer z-indices renumber every shape above an insertion point, so a
+single reorder touches hundreds of shapes and two concurrent reorders produce overlapping rewrites
+no merge rule can reconcile. Shapes instead carry variable-length base-62 keys with room between any
+two, so reordering rewrites exactly one key. An integer part keeps appends at constant length, which
+matters because appending is what every newly drawn shape does.
 
-Deletion is add-wins: an edit concurrent with a delete keeps the shape. The costs are asymmetric —
-a shape that wrongly survives is deleted again with one keystroke, while one wrongly removed is
-work the user may never get back.
+**One actor per board.** Concurrent mutation of a shared document is where convergence bugs hide,
+and they are unreproducible by nature. Every message for a board funnels through a single channel
+consumer that owns the replica — no locks, deterministic order per document, and concurrency that
+lives between boards rather than inside one.
+
+**Add-wins deletion.** An edit concurrent with a delete keeps the shape. The costs are asymmetric: a
+shape that wrongly survives is deleted again with one keystroke, while one wrongly removed is work
+the user may never get back.
 
 [**ARCHITECTURE.md**](ARCHITECTURE.md) covers the wire protocol, persistence, and the alternatives
 that were rejected — including why not OT, and why not simply using Yjs.
@@ -57,10 +71,10 @@ Server-side is done and runnable. The browser client is not built yet.
 
 | Component | State |
 | :-- | :-- |
-| CRDT core — clocks, order keys, merge | Done · 43 tests |
-| Rooms, wire protocol, repository | Done · 37 tests |
+| CRDT core | Done · 43 tests |
+| Rooms, protocol, repository | Done · 37 tests |
 | WebSocket server | Done |
-| TypeScript client and canvas | Not started |
+| TypeScript client | Not started |
 | Postgres repository | Not started |
 | AWS infrastructure | Not started |
 
@@ -75,12 +89,12 @@ cd server && dotnet run --project src/Tessera.Server
 | Endpoint | Purpose |
 | :-- | :-- |
 | `GET /health` | Liveness |
-| `GET /api/boards/{id}` | The merged document, materialised |
+| `GET /api/boards/{id}` | Merged document |
 | `GET /api/boards/{id}/socket` | Sync connection |
 
-With the server up, `scripts/smoke.mjs` drives it end to end — two clients on one board, operations
-broadcast to peers but never echoed to their author, presence that never touches the log, and a
-push forged as another replica refused:
+With the server up, the smoke script drives it end to end — two clients on one board, operations
+broadcast to peers but never echoed to their author, presence that never touches the log, and a push
+forged as another replica refused:
 
 ```bash
 node scripts/smoke.mjs
@@ -94,12 +108,12 @@ cd server && dotnet test
 
 Convergence is checked as a property rather than by example. A generated 400-operation session
 across three replicas is replayed in 200 random delivery orders, and every ordering must produce a
-byte-identical document. Idempotence and associativity are checked the same way — the orderings
-that break a merge are precisely the ones nobody thinks to write by hand.
+byte-identical document. Idempotence and associativity are checked the same way — the orderings that
+break a merge are precisely the ones nobody thinks to write by hand.
 
 The build runs with `TreatWarningsAsErrors` and the recommended analyzer set.
 
-## Layout
+## Project layout
 
 ```
 server/src/Tessera.Crdt      merge engine — no transport, no storage, no framework
@@ -109,8 +123,8 @@ server/tests                 xUnit suites
 scripts/smoke.mjs            end-to-end check against a running server
 ```
 
-The merge engine has no dependency on ASP.NET, a database, or a transport — it is a pure function
-of the operations it is given, which is what lets it be tested without a network and reused on both
+The merge engine has no dependency on ASP.NET, a database, or a transport — it is a pure function of
+the operations it is given, which is what lets it be tested without a network and reused on both
 sides of one.
 
 ## License
