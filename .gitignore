@@ -1,0 +1,25 @@
+# .NET
+bin/
+obj/
+*.user
+[Dd]ebug/
+[Rr]elease/
+TestResults/
+*.trx
+
+# Node
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+
+# Tooling
+.vs/
+.idea/
+.DS_Store
+*.log
+
+# Infrastructure
+cdk.out/
+.env
+.env.local
